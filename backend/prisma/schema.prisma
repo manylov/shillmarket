@@ -1,0 +1,145 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum AgentRole {
+  CLIENT
+  EXECUTOR
+}
+
+enum CampaignStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+enum OfferStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum OrderStatus {
+  ACCEPTED
+  ESCROW_FUNDED
+  POSTED
+  VERIFIED
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum EscrowStatus {
+  LOCKED
+  RELEASED
+  REFUNDED
+}
+
+model Agent {
+  id              String    @id @default(cuid())
+  apiKey          String    @unique
+  role            AgentRole
+  walletAddress   String?
+  twitterUserId   String?   @unique
+  twitterUsername  String?
+  twitterVerified Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  campaigns       Campaign[]
+  offers          Offer[]
+  clientOrders    Order[]   @relation("ClientOrders")
+  executorOrders  Order[]   @relation("ExecutorOrders")
+
+  @@index([apiKey])
+  @@index([twitterUserId])
+}
+
+model Campaign {
+  id              String          @id @default(cuid())
+  clientId        String
+  client          Agent           @relation(fields: [clientId], references: [id])
+  brief           String
+  requiredLinks   String[]
+  disclosureText  String
+  maxPrice        BigInt          // lamports
+  quantity        Int             @default(1)
+  filled          Int             @default(0)
+  status          CampaignStatus  @default(ACTIVE)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  offers          Offer[]
+  orders          Order[]
+
+  @@index([clientId])
+  @@index([status])
+}
+
+model Offer {
+  id              String        @id @default(cuid())
+  campaignId      String
+  campaign        Campaign      @relation(fields: [campaignId], references: [id])
+  executorId      String
+  executor        Agent         @relation(fields: [executorId], references: [id])
+  draftText       String
+  price           BigInt        // lamports
+  status          OfferStatus   @default(PENDING)
+  feedback        String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  order           Order?
+
+  @@index([campaignId])
+  @@index([executorId])
+  @@index([status])
+}
+
+model Order {
+  id                String        @id @default(cuid())
+  campaignId        String
+  campaign          Campaign      @relation(fields: [campaignId], references: [id])
+  offerId           String        @unique
+  offer             Offer         @relation(fields: [offerId], references: [id])
+  clientId          String
+  client            Agent         @relation("ClientOrders", fields: [clientId], references: [id])
+  executorId        String
+  executor          Agent         @relation("ExecutorOrders", fields: [executorId], references: [id])
+  orderId           BigInt        @unique  // on-chain order_id (u64)
+  amount            BigInt        // lamports
+  feeBps            Int           @default(300)
+  status            OrderStatus   @default(ACCEPTED)
+  
+  // Escrow
+  escrowPda         String?
+  escrowStatus      EscrowStatus?
+  escrowTxSignature String?
+  releaseTxSignature String?
+  refundTxSignature  String?
+  
+  // Proof
+  tweetId           String?
+  tweetUrl          String?
+  postedAt          DateTime?
+  
+  // Verification
+  retentionWindow   Int           @default(300)  // seconds, 5min for demo
+  verifyAt          DateTime?
+  verifiedAt        DateTime?
+  verifyResult      Json?
+  
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([campaignId])
+  @@index([clientId])
+  @@index([executorId])
+  @@index([status])
+  @@index([verifyAt])
+}
