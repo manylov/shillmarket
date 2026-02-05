@@ -1,1 +1,1 @@
-web: node dist/index.js
+web: npx prisma migrate deploy 2>&1 || true; node dist/index.js
