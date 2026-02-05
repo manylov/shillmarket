@@ -2,10 +2,10 @@
   "$schema": "https://railway.com/railway.schema.json",
   "build": {
     "builder": "RAILPACK",
-    "buildCommand": "npx prisma generate && npx tsc"
+    "buildCommand": "npx prisma generate && npx tsc && npx prisma migrate deploy || true"
   },
   "deploy": {
-    "startCommand": "npx prisma migrate deploy 2>&1; node dist/index.js",
+    "startCommand": "node dist/index.js",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 30
   }
