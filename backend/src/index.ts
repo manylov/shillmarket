@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import fs from 'fs';
 
 dotenv.config({ path: '../.env' });
 
@@ -26,6 +28,16 @@ app.use('/orders', orderRoutes);
 // Health check
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', service: 'shillmarket-backend' });
+});
+
+// Serve skill.md
+app.get('/skill.md', (_req, res) => {
+  const skillPath = path.resolve(__dirname, '..', 'skill.md');
+  if (fs.existsSync(skillPath)) {
+    res.type('text/markdown').send(fs.readFileSync(skillPath, 'utf-8'));
+  } else {
+    res.status(404).json({ error: 'skill.md not found' });
+  }
 });
 
 // Error handling
