@@ -37,14 +37,21 @@ app.listen(PORT, () => {
   console.log(`ShillMarket backend running on port ${PORT}`);
 
   // Start verification worker
-  const worker = createVerifyOrderWorker(processVerifyOrder);
-  worker.on('completed', (job) => {
-    console.log(`[worker] Job ${job.id} completed`);
-  });
-  worker.on('failed', (job, err) => {
-    console.error(`[worker] Job ${job?.id} failed:`, err);
-  });
-  console.log('Verification worker started');
+  try {
+    const worker = createVerifyOrderWorker(processVerifyOrder);
+    worker.on('completed', (job) => {
+      console.log(`[worker] Job ${job.id} completed`);
+    });
+    worker.on('failed', (job, err) => {
+      console.error(`[worker] Job ${job?.id} failed:`, err);
+    });
+    worker.on('error', (err) => {
+      console.error('[worker] Worker error:', err.message);
+    });
+    console.log('Verification worker started');
+  } catch (err) {
+    console.error('[worker] Failed to start verification worker:', err);
+  }
 });
 
 export default app;
