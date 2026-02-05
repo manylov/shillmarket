@@ -1,7 +1,6 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "main": "dist/index.js",
   "scripts": {
     "test": "vitest run",
     "dev": "tsx watch src/index.ts",

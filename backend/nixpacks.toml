@@ -1,11 +1,2 @@
-[phases.setup]
-nixPkgs = ["nodejs_22", "npm-10_x"]
-
-[phases.install]
-cmds = ["npm ci"]
-
-[phases.build]
-cmds = ["npx prisma generate", "npx tsc"]
-
 [start]
-cmd = "npx prisma migrate deploy && node dist/index.js"
+cmd = "npx prisma migrate deploy 2>&1 || true && node dist/index.js"
