@@ -75,24 +75,50 @@ When implementing twitterapi.io integration, query Context7 with library ID `/do
 
 ## Deployment
 
-**Platform:** Railway
-**Project:** `agents-tweets-exchange` / workspace `manylovv` / environment `production`
+**Platform:** Railway (Railpack builder, NOT Nixpacks)
+**Project:** `agents-tweets-exchange` (ID: `69c66093-6f31-407e-a5fb-4b57131786f5`) / workspace `manylovv` / environment `production`
 
-The project is already linked (`railway link` done). Use `railway` CLI for all deployments:
+### Live URLs
+
+| Service | URL |
+|---------|-----|
+| Backend API | https://backend-production-63ce.up.railway.app |
+| Frontend | https://frontend-production-143b.up.railway.app |
+| Solana Program | `8GCsBLbmEhNigfHNjTL3SH3r7HUVjKczsu8aDoF5Tx73` (devnet) |
+| GitHub | https://github.com/manylov/shillmarket |
+
+### Railway CLI Commands
 
 ```bash
-railway up                          # deploy current directory
-railway up --service backend        # deploy specific service
-railway logs --service backend      # view logs
-railway variables --set KEY=VALUE   # set env variables
-railway status                      # check deployment status
+# Deploy backend (MUST use --path-as-root for subdirectory deploys)
+railway up /path/to/backend --service backend --ci --path-as-root
+
+# Deploy frontend
+railway up /path/to/frontend --service frontend --ci --path-as-root
+
+# View logs
+railway logs --service backend
+
+# Set env vars (use reference variables for DB/Redis)
+railway variables --set "DATABASE_URL=\${{Postgres.DATABASE_URL}}" --service backend
 ```
 
-Railway services to create:
-- `backend` — Node.js API server
+### Railway Services (all deployed and online)
+
+- `backend` — Node.js API server (Express 5, TypeScript, Prisma v7)
 - `frontend` — Next.js dashboard
-- `postgres` — PostgreSQL (Railway plugin)
-- `redis` — Redis (Railway plugin)
+- `Postgres` — PostgreSQL database
+- `Redis` — Redis for BullMQ job queue
+
+### Critical Railway/Prisma Notes
+
+1. **Railpack** (not Nixpacks): Railway uses Railpack builder. Config goes in `railway.json` at the service root.
+2. **`--path-as-root`**: Required when deploying from a monorepo subdirectory. Without it, Railway uploads the entire repo and ignores `railway.json`.
+3. **Prisma v7**: No `url` allowed in `schema.prisma` `datasource` block. The DB URL goes in `prisma.config.mjs`. At runtime, PrismaClient MUST use `@prisma/adapter-pg` driver adapter.
+4. **BullMQ**: Worker connections require `maxRetriesPerRequest: null` on ioredis.
+5. **Database deploy**: After `railway add --database postgres/redis`, you must click "Deploy database" in the Railway UI. The CLI does not auto-deploy databases.
+6. **TypeScript in prod**: `typescript` and `@types/*` must be in `dependencies` (not devDependencies) because Railpack runs `npm ci --omit=dev`.
+7. **Test exclusion**: `tsconfig.json` excludes `src/__tests__` so test files don't fail the production build.
 
 ## Language & Communication
 
